@@ -43,13 +43,29 @@ ggplot(co2, aes(x = decimal_date, y = monthly_average)) +
 
 Describe the overall trend in the CO2 data.
 
-**Answer 1:**
 
+**Answer 1:**
+CO2 concentration has exponentially increased, from 1958 to current day concentrations has increased annually.
 **Question 2:**
 
 How does CO2 vary within a year?  What month is it at max?  Min?  What might explain this sub-annual pattern? (you will need to write code and make a plot to answer this question)
 
 **Answer 2:**
+Co2 reaches a maximum c02 level in may and minimum in September. The Northern hemisphere seasonal patterns explains the pattern. During winter months vegetation is not actively absorbing c02 and vice versa during the summer. The northers hemisphere is what drives this due to more land mass and vegetation.
+
+```{r}
+
+
+monthly <- co2 |> 
+  group_by(month) |> 
+  summarize(mean_av = mean(monthly_average)) |> 
+  ggplot(aes(month, mean_av))+
+  geom_line() +
+  theme_classic()+
+  scale_x_continuous(breaks = seq(1,12,1))
+
+monthly
+```
 
 
 
@@ -70,7 +86,9 @@ Describe the data set to the best of your ability, given the documentation provi
 - What is the difference between "global temperature" and "global temperature anomaly"? 
 
 **Answer 3:**
-
+Data is from NASA's Goddard Institute for Space Studies (GISS).
+each column is numeric and is measured in Celsius
+The difference between global temp & global temp anomaly is that the anomaly data is calculated by taking the difference between the average/baseline temperature and the recorded temp.
 
 **Question 4:**
 
@@ -79,12 +97,23 @@ Construct the necessary R code to import and prepare for plotting the following 
 You'll need to determine the file's delimiter and any comments or skips. You will also need to be sure that you have column names. You will not directly use the code above to read the CO2 data, but that code provides helpful tips for reading the data.
 
 **Answer 4:**
+```{r}
+data <- read.delim('nasadata.txt')
+
+df <- read.table('nasadata.txt',  
+                  header = TRUE,    
+                  fill = TRUE)  
+```
 
 **Question 5:**
 
 Plot the trend in global mean temperatures over time.  Describe what you see in the plot and how you interpret the patterns you observe.
 
 **Answer 5:**
+```{r}
+
+```
+
 
 ## Evaluating the evidence for a "Pause" in warming?
 
