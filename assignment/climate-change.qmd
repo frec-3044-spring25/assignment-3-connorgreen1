@@ -8,6 +8,7 @@ format:
 
 ```{r message=FALSE}
 library(tidyverse)
+
 ```
 
 ## Warm-up: Examining CO2 trends in R
@@ -45,7 +46,7 @@ Describe the overall trend in the CO2 data.
 
 
 **Answer 1:**
-CO2 concentration has exponentially increased, from 1958 to current day concentrations has increased annually.
+CO2 concentration has exponentially increased. From 1958 to current day, concentrations have increased annually.
 **Question 2:**
 
 How does CO2 vary within a year?  What month is it at max?  Min?  What might explain this sub-annual pattern? (you will need to write code and make a plot to answer this question)
@@ -62,7 +63,8 @@ monthly <- co2 |>
   ggplot(aes(month, mean_av))+
   geom_line() +
   theme_classic()+
-  scale_x_continuous(breaks = seq(1,12,1))
+  scale_x_continuous(breaks = seq(1,12,1))+
+  theme_minimal()
 
 monthly
 ```
@@ -98,20 +100,26 @@ You'll need to determine the file's delimiter and any comments or skips. You wil
 
 **Answer 4:**
 ```{r}
-data <- read.delim('nasadata.txt')
+Global.temp <-  read_table("https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt", 
+                  comment="#",
+                  col_names = c("year", "temp", "lowess"),
+                  na = c("-1", "-99.99"), skip =5)
 
-df <- read.table('nasadata.txt',  
-                  header = TRUE,    
-                  fill = TRUE)  
+
+
 ```
 
 **Question 5:**
 
 Plot the trend in global mean temperatures over time.  Describe what you see in the plot and how you interpret the patterns you observe.
 
+Average global temp started gradually increasing around 1920. The gradual increase can be see until around 1970, where average temp began to increase exponential till present day.
 **Answer 5:**
 ```{r}
-
+Global.temp |> ggplot(aes(year, temp)) + 
+  geom_line() +
+  labs(x = 'Year', y = 'Temp (C*)', title = 'Global mean temperature')+
+   theme_minimal()
 ```
 
 
@@ -126,23 +134,55 @@ You will use rolling averages to help you explore the evidence for a pause. Sinc
 Use a search engine (e.g., Google) or a chat LLM to find out how to calculate a rolling average in R. What search term or chat LLM prompt did you use?  What website or answer from the chat LLM did you end up using?  How much did you need to modify the code from the website or chat LLM to answer the question successfully?
 
 **Answer 6:**
+I used the prompt 'how to calculate rolling averages in R' in ChatGPT. I used the answer that used package 'zoo' because I've never heard about it and it looked pretty simple. I just had to modify the data frame name/variables and width size for each average.
 
 **Question 7:**
 
 - What is the meaning of "5-year average" vs. "annual average"?
 - Create a data frame from the annual temperature anomaly data (from Question 4) with three new columns: 5-year running averages, 10-year running averages, and 20-year running averages.
 
+Annual average is the average using calculation from a single year and a 5-year average would be calculated finding the sum of 5 separate years of averages and dividing it by 5.
 **Answer 7:**
+```{r}
+library(zoo)
+Five_Year_Avg <- rollapply(Global.temp$temp, width = 5, FUN = mean, align = 'right', fill = NA)
+Ten_Year_Avg <- rollapply(Global.temp$temp, width = 10, FUN = mean, align = 'right', fill = NA)
+Twenty_Year_Avg <- rollapply(Global.temp$temp, width = 20, FUN = mean, align = 'right', fill = NA)
+
+running_averages <- data.frame(Five_Year_Avg = Five_Year_Avg,
+                               Ten_Year_Avg =Ten_Year_Avg,
+                               Twenty_Year_Avg = Twenty_Year_Avg,
+                               year = Global.temp$year) 
+  
+running_averages_long <- running_averages |> 
+  pivot_longer(cols = c(Five_Year_Avg, Ten_Year_Avg, Twenty_Year_Avg),
+               names_to = "Rolling_Avg_Type",
+               values_to = "temp")
+    
+
+
+```
 
 **Question 8:**
 
 Plot the different averages on the *same plot* and describe what differences you see and why.  
 
+
+All three averages hold strong similarities in their patterns. However, some small differences can be observed. The 5 year average line shows greater variability, with more pronounced peaks and dips, indicating larger fluctuations in the data. Data variability seems to decreases through the 10 and 20 year averages, 10 year avr has less pronounced peaks and the 20 year average is almost completely smooth.
 **Answer 8:**
+```{r}
+ggplot(running_averages_long, aes(x = year, y = temp, color = Rolling_Avg_Type)) +
+  geom_line() + 
+  labs(x = "Year", y = "Temperature (°C)", title = "Rolling Averages of global temperature") +
+  theme_minimal()  
+
+```
 
 **Question 9:**
 
 By examining the data here, what evidence do you find or not find for such a pause? 
+
+The only possible pause my graph shows is around 1970-1980 where there inst much change in temperature. I feel like the 20 year avr depicts the pause better than the others because temp is clearly depicted increasing right after 1920 until before 1960, which is where it  decreases and has very little change till 1980, and begins to increase exponentially till current day. 
 
 **Answer 9:**
 
@@ -185,11 +225,32 @@ Your answer to Question 10 is going to be a mix of code chunks and text that you
 - Describe your conclusions to the question "How do recent atmospheric CO2 levels compare to historical levels?" using your plot as supporting evidence.   
 
 **Answer 10:**
+The columnns are Depth(m), Age of the ice (year), Mean age of the air(year), and C02 concentrations(ppmv)
 
+Recent atmospheric CO2 levels are drastically higher than historical levels. The graph depicts this showing the maximum CO2 concentration in the historic data being around 300, while recent years have seen CO2 concentration reaching 425 ppvm. These recent levels have created a rapid exponential increase in the graph.
 ```{r}
+vostock <- read_table("https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-457358fdc81d3a5-20180726T203952542",col_names = c("Depth (m)", "year", "Mean age of air (yr BP)", 'CO2'), skip =20)
+                 
+vostock$year <- 2003 - vostock$year                    
+                       
+vostock |> ggplot(aes(x = year, y = `CO2 concentration (ppvm`)) + geom_line()   
 
 
+
+
+
+co2 <- co2 |>  group_by(year) |> 
+  summarize(CO2 = mean(monthly_average)) |> 
+  select(year, CO2)
+
+combined <- bind_rows(vostock, co2)
+
+ggplot(combined, aes(year, CO2)) + 
+  geom_line() + 
+  theme_minimal() +
+  labs(x = 'Year', y = 'CO2 Concentration (ppvm)', title = 'Combined Polar Ice and Current C02 Data' )
 ```
+
 
 # Render and committing
 
